@@ -15,19 +15,41 @@ export default function AuthForm({ type }: AuthFormProps) {
   const [showOtpField, setShowOtpField] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Email validation function
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Handle input changes with email validation
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
     }));
+
+    if (name === "email") {
+      if (!value) {
+        setEmailError("Email is required");
+      } else if (!isValidEmail(value)) {
+        setEmailError("Please enter a valid email address");
+      } else {
+        setEmailError(null);
+      }
+    }
   };
 
   const handleGetOtp = async () => {
     if (!formData.email) {
-      setError("Email is required");
+      setEmailError("Email is required");
+      return;
+    }
+    if (!isValidEmail(formData.email)) {
+      setEmailError("Please enter a valid email address");
       return;
     }
     setError(null);
@@ -57,6 +79,10 @@ export default function AuthForm({ type }: AuthFormProps) {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!formData.email || !isValidEmail(formData.email)) {
+      setEmailError("Please enter a valid email address");
+      return;
+    }
     if (showOtpField && !formData.otp) {
       setError("Please enter the OTP");
       return;
@@ -81,6 +107,10 @@ export default function AuthForm({ type }: AuthFormProps) {
   };
 
   const handleGoogleAuth = () => {
+    if (!formData.email || !isValidEmail(formData.email)) {
+      setEmailError("Please enter a valid email address");
+      return;
+    }
     window.location.href = "http://localhost:5000/auth/google";
   };
 
@@ -149,8 +179,11 @@ export default function AuthForm({ type }: AuthFormProps) {
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="Enter your email"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                  className={`w-full px-4 py-3 border ${emailError ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all`}
                 />
+                {emailError && (
+                  <p className="text-red-500 text-sm mt-1">{emailError}</p>
+                )}
               </div>
 
               {/* OTP Field - Only shown after Get OTP is clicked */}
@@ -203,16 +236,16 @@ export default function AuthForm({ type }: AuthFormProps) {
                 <button
                   type="button"
                   onClick={handleGetOtp}
-                  disabled={loading}
-                  className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                  disabled={loading || !!emailError}
+                  className={`w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 ${loading || emailError ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {loading ? "Sending OTP..." : "Get OTP"}
                 </button>
               ) : (
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50"
+                  disabled={loading || !!emailError}
+                  className={`w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 ${loading || emailError ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {loading ? "Verifying..." : type === "sign-up" ? "Sign up" : "Sign in"}
                 </button>
@@ -222,7 +255,8 @@ export default function AuthForm({ type }: AuthFormProps) {
               <button
                 type="button"
                 onClick={handleGoogleAuth}
-                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+                disabled={loading || !!emailError}
+                className={`w-full bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 ${loading || emailError ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path
