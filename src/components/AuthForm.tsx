@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 
 type AuthFormProps = {
@@ -10,13 +10,15 @@ export default function AuthForm({ type }: AuthFormProps) {
     name: "",
     email: "",
     otp: "",
-    userId: "", // Store userId from register/otp send
+    userId: "",
   });
+  const [keepLoggedIn, setKeepLoggedIn] = useState(false);
   const [showOtpField, setShowOtpField] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   // Email validation function
   const isValidEmail = (email: string): boolean => {
@@ -42,6 +44,17 @@ export default function AuthForm({ type }: AuthFormProps) {
       }
     }
   };
+
+  // Handle OTP resend cooldown
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (resendCooldown > 0) {
+      timer = setInterval(() => {
+        setResendCooldown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   const handleGetOtp = async () => {
     if (!formData.email) {
@@ -69,9 +82,31 @@ export default function AuthForm({ type }: AuthFormProps) {
         });
         setFormData((prev) => ({ ...prev, userId: (response.data as { userId: string }).userId }));
         setShowOtpField(true);
+        setResendCooldown(30); // Set 30-second cooldown
       }
     } catch (err: any) {
       setError(err.response?.data?.message || "Failed to send OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!formData.email || !isValidEmail(formData.email)) {
+      setEmailError("Please enter a valid email address");
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      const response = await axios.post("http://localhost:5000/auth/otp/send", {
+        email: formData.email,
+        action: "login",
+      });
+      setFormData((prev) => ({ ...prev, userId: (response.data as { userId: string }).userId }));
+      setResendCooldown(30); // Reset cooldown
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to resend OTP");
     } finally {
       setLoading(false);
     }
@@ -94,6 +129,7 @@ export default function AuthForm({ type }: AuthFormProps) {
         userId: formData.userId,
         otp: formData.otp,
         action: type === "sign-up" ? "signup" : "login",
+        keepLoggedIn: type === "sign-in" ? keepLoggedIn : false,
       });
       const data = response.data as { token: string; user: any };
       localStorage.setItem("token", data.token);
@@ -111,7 +147,8 @@ export default function AuthForm({ type }: AuthFormProps) {
       setEmailError("Please enter a valid email address");
       return;
     }
-    window.location.href = "http://localhost:5000/auth/google";
+    const keepLoggedInParam = type === "sign-in" ? `&keepLoggedIn=${keepLoggedIn}` : '';
+    window.location.href = `http://localhost:5000/auth/google?email=${encodeURIComponent(formData.email)}${keepLoggedInParam}`;
   };
 
   return (
@@ -188,47 +225,82 @@ export default function AuthForm({ type }: AuthFormProps) {
 
               {/* OTP Field - Only shown after Get OTP is clicked */}
               {showOtpField && (
-                <div>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      id="otp"
-                      name="otp"
-                      value={formData.otp}
-                      onChange={handleInputChange}
-                      placeholder="OTP"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all pr-12"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                <>
+                  <div>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        id="otp"
+                        name="otp"
+                        value={formData.otp}
+                        onChange={handleInputChange}
+                        placeholder="OTP"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all pr-12"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
-                        {showPassword ? (
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
-                          />
-                        ) : (
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                        )}
-                      </svg>
-                    </button>
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          {showPassword ? (
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"
+                            />
+                          ) : (
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                            />
+                          )}
+                        </svg>
+                      </button>
+                    </div>
                   </div>
-                </div>
+
+                  {/* Keep Me Logged In - Only for sign-in */}
+                  {type === "sign-in" && (
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        id="keepLoggedIn"
+                        checked={keepLoggedIn}
+                        onChange={(e) => setKeepLoggedIn(e.target.checked)}
+                        className="h-4 w-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <label
+                        htmlFor="keepLoggedIn"
+                        className="ml-2 text-sm text-gray-700"
+                      >
+                        Keep me logged in
+                      </label>
+                    </div>
+                  )}
+
+                  {/* Resend OTP - Only for sign-in */}
+                  {type === "sign-in" && (
+                    <div className="text-center">
+                      <button
+                        type="button"
+                        onClick={handleResendOtp}
+                        disabled={loading || resendCooldown > 0 || !!emailError}
+                        className={`text-blue-500 hover:text-blue-600 font-medium ${loading || resendCooldown > 0 || emailError ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        {resendCooldown > 0 ? `Resend OTP in ${resendCooldown}s` : "Resend OTP"}
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Buttons */}
