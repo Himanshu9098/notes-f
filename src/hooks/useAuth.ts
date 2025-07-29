@@ -56,14 +56,14 @@ export const useAuth = (type: 'sign-up' | 'sign-in') => {
           email: formData.email,
           name: formData.name,
         });
-        setFormData((prev) => ({ ...prev, userId: response.data.userId }));
+        setFormData((prev) => ({ ...prev, userId: (response.data as { userId: string }).userId }));
         setShowOtpField(true);
       } else {
         const response = await axios.post(`${BASE_URL}/auth/otp/send`, {
           email: formData.email,
           action: 'login',
         });
-        setFormData((prev) => ({ ...prev, userId: response.data.userId }));
+        setFormData((prev) => ({ ...prev, userId: (response.data as { userId: string }).userId }));
         setShowOtpField(true);
         setResendCooldown(30);
       }
@@ -86,7 +86,7 @@ export const useAuth = (type: 'sign-up' | 'sign-in') => {
         email: formData.email,
         action: 'login',
       });
-      setFormData((prev) => ({ ...prev, userId: response.data.userId }));
+      setFormData((prev) => ({ ...prev, userId: (response.data as { userId: string }).userId }));
       setResendCooldown(30);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to resend OTP');
@@ -108,7 +108,11 @@ export const useAuth = (type: 'sign-up' | 'sign-in') => {
     setError(null);
     setLoading(true);
     try {
-      const response = await axios.post(`${BASE_URL}/auth/otp/verify`, {
+      interface VerifyOtpResponse {
+        token: string;
+        user: any;
+      }
+      const response = await axios.post<VerifyOtpResponse>(`${BASE_URL}/auth/otp/verify`, {
         userId: formData.userId,
         otp: formData.otp,
         action: type === 'sign-up' ? 'signup' : 'login',

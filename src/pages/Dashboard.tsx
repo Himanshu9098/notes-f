@@ -6,12 +6,6 @@ import NoteItem from '../components/NoteItem';
 import NoteForm from '../components/NoteForm';
 import { useNotes } from '../hooks/useNotes';
 
-interface Note {
-    _id: string;
-    title: string;
-    content: string;
-    createdAt: string;
-}
 
 /**
  * Dashboard page displaying user info, note creation form, and note list
