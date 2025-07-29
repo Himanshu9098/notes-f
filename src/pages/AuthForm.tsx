@@ -25,7 +25,6 @@ export default function AuthForm({ type }: AuthFormProps) {
     loading,
     resendCooldown,
     setKeepLoggedIn,
-    setShowOtpField,
     setResendCooldown,
     handleInputChange,
     handleGetOtp,
