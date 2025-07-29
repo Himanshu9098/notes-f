@@ -20,6 +20,9 @@ export default function AuthForm({ type }: AuthFormProps) {
   const [loading, setLoading] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
+  // Base URL from environment variable
+  const BASE_URL = import.meta.env.VITE_BACKEND_URL;
+
   // Email validation function
   const isValidEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -69,14 +72,14 @@ export default function AuthForm({ type }: AuthFormProps) {
     setLoading(true);
     try {
       if (type === "sign-up") {
-        const response = await axios.post("http://localhost:5000/auth/register", {
+        const response = await axios.post(`${BASE_URL}/auth/register`, {
           email: formData.email,
           name: formData.name,
         });
         setFormData((prev) => ({ ...prev, userId: (response.data as { userId: string }).userId }));
         setShowOtpField(true);
       } else {
-        const response = await axios.post("http://localhost:5000/auth/otp/send", {
+        const response = await axios.post(`${BASE_URL}/auth/otp/send`, {
           email: formData.email,
           action: "login",
         });
@@ -99,7 +102,7 @@ export default function AuthForm({ type }: AuthFormProps) {
     setError(null);
     setLoading(true);
     try {
-      const response = await axios.post("http://localhost:5000/auth/otp/send", {
+      const response = await axios.post(`${BASE_URL}/auth/otp/send`, {
         email: formData.email,
         action: "login",
       });
@@ -125,7 +128,7 @@ export default function AuthForm({ type }: AuthFormProps) {
     setError(null);
     setLoading(true);
     try {
-      const response = await axios.post("http://localhost:5000/auth/otp/verify", {
+      const response = await axios.post(`${BASE_URL}/auth/otp/verify`, {
         userId: formData.userId,
         otp: formData.otp,
         action: type === "sign-up" ? "signup" : "login",
@@ -144,9 +147,10 @@ export default function AuthForm({ type }: AuthFormProps) {
 
   const handleGoogleAuth = () => {
     const keepLoggedInParam = type === "sign-in" ? `?keepLoggedIn=${keepLoggedIn}` : '';
-    window.location.href = `http://localhost:5000/auth/google${keepLoggedInParam}`;
+    window.location.href = `${BASE_URL}/auth/google${keepLoggedInParam}`;
   };
 
+  // Rest of the code remains unchanged (form JSX, etc.)
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="flex flex-row w-full max-w-3xl rounded-lg bg-white shadow-md overflow-hidden">

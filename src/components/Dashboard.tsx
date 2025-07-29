@@ -17,6 +17,8 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Base URL from environment variable
+  const BASE_URL = import.meta.env.VITE_BACKEND_URL;
   // Fetch user and notes on mount
   useEffect(() => {
     const fetchData = async () => {
@@ -37,7 +39,7 @@ export default function Dashboard() {
         console.log('Dashboard.tsx - Parsed User:', parsedUser);
         setUser(parsedUser);
 
-        const response = await axios.get<Note[]>("http://localhost:5000/notes", {
+        const response = await axios.get<Note[]>(`${BASE_URL}/notes`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setNotes(response.data);
@@ -62,7 +64,7 @@ export default function Dashboard() {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        "http://localhost:5000/notes",
+        `${BASE_URL}/notes`,
         newNote,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -80,7 +82,7 @@ export default function Dashboard() {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:5000/notes/${id}`, {
+      await axios.delete(`${BASE_URL}/notes/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setNotes(notes.filter((note) => note._id !== id));
