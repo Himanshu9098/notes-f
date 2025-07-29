@@ -38,7 +38,7 @@ export default function App() {
           const parsedUser = JSON.parse(decodeURIComponent(user));
           localStorage.setItem('token', token);
           localStorage.setItem('user', JSON.stringify(parsedUser));
-          window.history.replaceState({}, document.title, '/dashboard');
+          window.history.replaceState({}, document.title, '/');
         } catch (err) {
           window.history.replaceState({}, document.title, '/signin');
         }
