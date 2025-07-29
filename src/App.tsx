@@ -56,14 +56,14 @@ function App() {
         <Route path="/signup" element={<AuthForm type="sign-up" />} />
         <Route path="/signin" element={<AuthForm type="sign-in" />} />
         <Route
-          path="/dashboard"
+          path="/"
           element={
             <ProtectedRoute>
               <Dashboard />
             </ProtectedRoute>
           }
         />
-        <Route path="*" element={<Navigate to="/signin" />} />
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
   );

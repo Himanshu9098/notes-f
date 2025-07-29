@@ -47,7 +47,7 @@ export default function AuthForm({ type }: AuthFormProps) {
 
   // Handle OTP resend cooldown
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setInterval>;
     if (resendCooldown > 0) {
       timer = setInterval(() => {
         setResendCooldown((prev) => prev - 1);
@@ -143,12 +143,8 @@ export default function AuthForm({ type }: AuthFormProps) {
   };
 
   const handleGoogleAuth = () => {
-    if (!formData.email || !isValidEmail(formData.email)) {
-      setEmailError("Please enter a valid email address");
-      return;
-    }
-    const keepLoggedInParam = type === "sign-in" ? `&keepLoggedIn=${keepLoggedIn}` : '';
-    window.location.href = `http://localhost:5000/auth/google?email=${encodeURIComponent(formData.email)}${keepLoggedInParam}`;
+    const keepLoggedInParam = type === "sign-in" ? `?keepLoggedIn=${keepLoggedIn}` : '';
+    window.location.href = `http://localhost:5000/auth/google${keepLoggedInParam}`;
   };
 
   return (
@@ -223,6 +219,25 @@ export default function AuthForm({ type }: AuthFormProps) {
                 )}
               </div>
 
+              {/* Keep Me Logged In - Only for sign-in */}
+              {type === "sign-in" && (
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="keepLoggedIn"
+                    checked={keepLoggedIn}
+                    onChange={(e) => setKeepLoggedIn(e.target.checked)}
+                    className="h-4 w-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label
+                    htmlFor="keepLoggedIn"
+                    className="ml-2 text-sm text-gray-700"
+                  >
+                    Keep me logged in
+                  </label>
+                </div>
+              )}
+
               {/* OTP Field - Only shown after Get OTP is clicked */}
               {showOtpField && (
                 <>
@@ -268,25 +283,6 @@ export default function AuthForm({ type }: AuthFormProps) {
                     </div>
                   </div>
 
-                  {/* Keep Me Logged In - Only for sign-in */}
-                  {type === "sign-in" && (
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        id="keepLoggedIn"
-                        checked={keepLoggedIn}
-                        onChange={(e) => setKeepLoggedIn(e.target.checked)}
-                        className="h-4 w-4 text-blue-500 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <label
-                        htmlFor="keepLoggedIn"
-                        className="ml-2 text-sm text-gray-700"
-                      >
-                        Keep me logged in
-                      </label>
-                    </div>
-                  )}
-
                   {/* Resend OTP - Only for sign-in */}
                   {type === "sign-in" && (
                     <div className="text-center">
@@ -327,8 +323,8 @@ export default function AuthForm({ type }: AuthFormProps) {
               <button
                 type="button"
                 onClick={handleGoogleAuth}
-                disabled={loading || !!emailError}
-                className={`w-full bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 ${loading || emailError ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={loading}
+                className={`w-full bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path
